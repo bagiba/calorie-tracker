@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ parsed_date.strftime('%B %d, %Y') }} — Clories{% endblock %}
+
+{% block content %}
+<div class="day-header-bar">
+    <a href="{{ url_for('calendar_view', year=parsed_date.year, month=parsed_date.month) }}" class="back-link">&larr; Back to {{ parsed_date.strftime('%B %Y') }}</a>
+    <h1>{{ parsed_date.strftime('%A, %B %d, %Y') }}</h1>
+</div>
+
+<div class="day-content">
+    <div class="total-bar">
+        <span>Daily Total:</span>
+        <span id="daily-total" class="total-number">{{ total }} cal</span>
+        <span class="target-info">/ {{ settings['calorie_target'] }} cal target</span>
+    </div>
+
+    <div class="meal-list" id="meal-list">
+        {% for meal in meals %}
+        <div class="meal-item" data-id="{{ meal['id'] }}">
+            <div class="meal-info">
+                <span class="meal-name">{{ meal['name'] }}</span>
+                <span class="meal-calories">{{ meal['calories'] }} cal</span>
+            </div>
+            <div class="meal-actions">
+                <button class="btn-edit" onclick="editMeal({{ meal['id'] }})">Edit</button>
+                <button class="btn-delete" onclick="deleteMeal({{ meal['id'] }})">Delete</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="empty-state" id="empty-state"{% if meals %} style="display:none"{% endif %}>No meals logged yet. Add your first meal below.</p>
+
+    <form class="add-meal-form" id="add-meal-form">
+        <input type="hidden" id="meal-date" value="{{ date }}">
+        <input type="text" id="meal-name" placeholder="Meal name" required>
+        <input type="number" id="meal-calories" placeholder="Calories" min="0" required>
+        <button type="submit" class="btn-add">Add Meal</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

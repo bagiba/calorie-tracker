@@ -1,0 +1,405 @@
+:root {
+    --bg: #ffffff;
+    --bg-card: #f7f7f5;
+    --bg-input: #ffffff;
+    --text: #37352f;
+    --text-muted: #9b9a97;
+    --accent: #da7b4a;
+    --green: #2ea043;
+    --yellow: #cb912f;
+    --red: #d44c47;
+    --gray: #f0f0f0;
+    --border: #e3e2de;
+    --radius: 6px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+
+nav {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1rem;
+}
+
+.nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 1.5rem;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: var(--text);
+}
+
+/* ── Main ────────────────────────────────────────────────────────────────── */
+
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+h1 {
+    margin-bottom: 1.5rem;
+}
+
+/* ── Flash Messages ──────────────────────────────────────────────────────── */
+
+.flash {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}
+
+.flash-success {
+    background: rgba(46, 160, 67, 0.1);
+    border: 1px solid rgba(46, 160, 67, 0.4);
+    color: var(--green);
+}
+
+.flash-error {
+    background: rgba(212, 76, 71, 0.1);
+    border: 1px solid rgba(212, 76, 71, 0.4);
+    color: var(--red);
+}
+
+/* ── Calendar ────────────────────────────────────────────────────────────── */
+
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-header h1 {
+    font-size: 1.5rem;
+    min-width: 220px;
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.nav-arrow {
+    font-size: 1.5rem;
+    color: var(--text);
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    transition: background 0.2s;
+}
+
+.nav-arrow:hover {
+    background: var(--gray);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.day-header {
+    text-align: center;
+    padding: 0.5rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.15s, box-shadow 0.15s;
+    padding: 0.25rem;
+}
+
+.day-cell:not(.empty):hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.day-cell.empty {
+    background: transparent;
+}
+
+.day-cell.gray {
+    background: var(--gray);
+}
+
+.day-cell.green {
+    background: rgba(46, 160, 67, 0.12);
+    border: 1px solid rgba(46, 160, 67, 0.45);
+}
+
+.day-cell.yellow {
+    background: rgba(203, 145, 47, 0.12);
+    border: 1px solid rgba(203, 145, 47, 0.4);
+}
+
+.day-cell.red {
+    background: rgba(212, 76, 71, 0.12);
+    border: 1px solid rgba(212, 76, 71, 0.4);
+}
+
+.day-cell.today {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.day-number {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.day-calories {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ── Day View ────────────────────────────────────────────────────────────── */
+
+.day-header-bar {
+    margin-bottom: 1.5rem;
+}
+
+.back-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.back-link:hover {
+    color: var(--text);
+}
+
+.day-header-bar h1 {
+    font-size: 1.4rem;
+    margin-top: 0.5rem;
+}
+
+.total-bar {
+    background: var(--bg-card);
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.total-number {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.target-info {
+    color: var(--text-muted);
+}
+
+/* ── Meal List ───────────────────────────────────────────────────────────── */
+
+.meal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.meal-item {
+    background: var(--bg-card);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.meal-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.meal-name {
+    font-weight: 500;
+}
+
+.meal-calories {
+    color: var(--text-muted);
+}
+
+.meal-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.meal-info input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.meal-info .edit-name {
+    flex: 1;
+    max-width: 200px;
+}
+
+.meal-info .edit-calories {
+    width: 80px;
+}
+
+.empty-state {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+button {
+    cursor: pointer;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    transition: opacity 0.2s;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.btn-add, .btn-save {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-edit {
+    background: var(--gray);
+    color: var(--text);
+}
+
+.btn-delete {
+    background: rgba(212, 76, 71, 0.1);
+    color: var(--red);
+}
+
+.btn-cancel {
+    background: var(--gray);
+    color: var(--text);
+}
+
+/* ── Add Meal Form ───────────────────────────────────────────────────────── */
+
+.add-meal-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.add-meal-form input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.add-meal-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+#meal-name {
+    flex: 1;
+}
+
+#meal-calories {
+    width: 100px;
+}
+
+/* ── Settings ────────────────────────────────────────────────────────────── */
+
+.settings-form {
+    max-width: 400px;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.form-group input {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+}

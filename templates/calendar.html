@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ month_name }} {{ year }} — Clories{% endblock %}
+
+{% block content %}
+<div class="calendar-header">
+    <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}" class="nav-arrow">&larr;</a>
+    <h1>{{ month_name }} {{ year }}</h1>
+    <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}" class="nav-arrow">&rarr;</a>
+</div>
+
+<div class="calendar-grid">
+    <div class="day-header">Mon</div>
+    <div class="day-header">Tue</div>
+    <div class="day-header">Wed</div>
+    <div class="day-header">Thu</div>
+    <div class="day-header">Fri</div>
+    <div class="day-header">Sat</div>
+    <div class="day-header">Sun</div>
+
+    {% for week in weeks %}
+    {% for day in week %}
+    {% if day == 0 %}
+    <div class="day-cell empty"></div>
+    {% else %}
+    {% set date_str = '%04d-%02d-%02d'|format(year, month, day) %}
+    {% set color = day_color(day) %}
+    {% set total = daily_totals.get(date_str) %}
+    <a href="{{ url_for('day_view', date_str=date_str) }}"
+       class="day-cell {{ color }}{% if today.year == year and today.month == month and today.day == day %} today{% endif %}">
+        <span class="day-number">{{ day }}</span>
+        {% if total is not none %}
+        <span class="day-calories">{{ total }} cal</span>
+        {% endif %}
+    </a>
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+</div>
+{% endblock %}

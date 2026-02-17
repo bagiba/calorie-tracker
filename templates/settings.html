@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Clories{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+
+<form method="POST" class="settings-form">
+    <div class="form-group">
+        <label for="calorie_target">Daily Calorie Target</label>
+        <input type="number" id="calorie_target" name="calorie_target"
+               value="{{ settings['calorie_target'] }}" min="1" required>
+    </div>
+    <div class="form-group">
+        <label for="yellow_threshold">Yellow Threshold</label>
+        <p class="help-text">Days at or below this are green; above are yellow.</p>
+        <input type="number" id="yellow_threshold" name="yellow_threshold"
+               value="{{ settings['yellow_threshold'] }}" min="1" required>
+    </div>
+    <div class="form-group">
+        <label for="red_threshold">Red Threshold</label>
+        <p class="help-text">Days above this are red.</p>
+        <input type="number" id="red_threshold" name="red_threshold"
+               value="{{ settings['red_threshold'] }}" min="1" required>
+    </div>
+    <button type="submit" class="btn-save">Save Settings</button>
+</form>
+{% endblock %}
