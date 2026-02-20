@@ -3,20 +3,36 @@
 {% block title %}{{ month_name }} {{ year }} — Clories{% endblock %}
 
 {% block content %}
+<p class="goal-line">goal: {{ nav_settings['calorie_target'] }} cal / day</p>
+
 <div class="calendar-header">
     <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}" class="nav-arrow">&larr;</a>
     <h1>{{ month_name }} {{ year }}</h1>
     <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}" class="nav-arrow">&rarr;</a>
 </div>
 
+<div class="prediction-bar">
+    {% if prediction.days == 0 %}
+    <span class="prediction-empty">no logged days this month — add meals to see a weight prediction.</span>
+    {% else %}
+    <span class="prediction-label">weight prediction</span>
+    <span class="prediction-sep">·</span>
+    <span class="prediction-stat">{{ prediction.days }} day{{ 's' if prediction.days != 1 else '' }} logged</span>
+    <span class="prediction-sep">·</span>
+    <span class="prediction-change {{ 'change-loss' if prediction.is_loss else 'change-gain' }}">
+        {{ '−' if prediction.is_loss else '+' }}{{ prediction.kg_str }} kg
+    </span>
+    {% endif %}
+</div>
+
 <div class="calendar-grid">
-    <div class="day-header">Mon</div>
-    <div class="day-header">Tue</div>
-    <div class="day-header">Wed</div>
-    <div class="day-header">Thu</div>
-    <div class="day-header">Fri</div>
-    <div class="day-header">Sat</div>
-    <div class="day-header">Sun</div>
+    <div class="day-header">mon</div>
+    <div class="day-header">tue</div>
+    <div class="day-header">wed</div>
+    <div class="day-header">thu</div>
+    <div class="day-header">fri</div>
+    <div class="day-header">sat</div>
+    <div class="day-header">sun</div>
 
     {% for week in weeks %}
     {% for day in week %}

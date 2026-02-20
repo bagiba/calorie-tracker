@@ -1,28 +1,70 @@
 {% extends "base.html" %}
 
-{% block title %}Settings — Clories{% endblock %}
+{% block title %}settings — Clories{% endblock %}
 
 {% block content %}
-<h1>Settings</h1>
+<h1>settings</h1>
 
 <form method="POST" class="settings-form">
+
+    <h2 class="settings-section">calorie thresholds</h2>
+
     <div class="form-group">
-        <label for="calorie_target">Daily Calorie Target</label>
+        <label for="calorie_target">daily calorie target</label>
         <input type="number" id="calorie_target" name="calorie_target"
                value="{{ settings['calorie_target'] }}" min="1" required>
     </div>
     <div class="form-group">
-        <label for="yellow_threshold">Yellow Threshold</label>
-        <p class="help-text">Days at or below this are green; above are yellow.</p>
+        <label for="yellow_threshold">yellow threshold</label>
+        <p class="help-text">days at or below this are green; above are yellow.</p>
         <input type="number" id="yellow_threshold" name="yellow_threshold"
                value="{{ settings['yellow_threshold'] }}" min="1" required>
     </div>
     <div class="form-group">
-        <label for="red_threshold">Red Threshold</label>
-        <p class="help-text">Days above this are red.</p>
+        <label for="red_threshold">red threshold</label>
+        <p class="help-text">days above this are red.</p>
         <input type="number" id="red_threshold" name="red_threshold"
                value="{{ settings['red_threshold'] }}" min="1" required>
     </div>
-    <button type="submit" class="btn-save">Save Settings</button>
+
+    <h2 class="settings-section">body stats</h2>
+    <p class="help-text section-help">used to estimate your tdee and predict monthly weight change on the calendar.</p>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="age">age</label>
+            <input type="number" id="age" name="age"
+                   value="{{ settings['age'] }}" min="1" max="120" required>
+        </div>
+        <div class="form-group">
+            <label for="height_cm">height (cm)</label>
+            <input type="number" id="height_cm" name="height_cm"
+                   value="{{ settings['height_cm'] }}" min="50" max="300" required>
+        </div>
+        <div class="form-group">
+            <label for="weight_kg">weight (kg)</label>
+            <input type="number" id="weight_kg" name="weight_kg"
+                   value="{{ settings['weight_kg'] }}" min="1" max="500" step="0.1" required>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="gender">biological sex</label>
+        <select id="gender" name="gender">
+            <option value="male"   {% if settings['gender'] == 'male'   %}selected{% endif %}>male</option>
+            <option value="female" {% if settings['gender'] == 'female' %}selected{% endif %}>female</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="activity_level">activity level</label>
+        <select id="activity_level" name="activity_level">
+            {% for value, label in activity_labels.items() %}
+            <option value="{{ value }}" {% if settings['activity_level'] == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button type="submit" class="btn-save">save settings</button>
 </form>
 {% endblock %}

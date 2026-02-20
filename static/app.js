@@ -59,7 +59,7 @@ function addMealToList(meal) {
 }
 
 async function deleteMeal(id) {
-    if (!confirm('Delete this meal?')) return;
+    if (!confirm('delete this meal?')) return;
 
     const res = await fetch(`/api/meals/${id}`, { method: 'DELETE' });
     if (res.ok) {

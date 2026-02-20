@@ -8,10 +8,43 @@ app.secret_key = 'clories-secret-key'
 
 app.teardown_appcontext(close_db)
 
+ACTIVITY_LABELS = {
+    'sedentary':   'sedentary (little/no exercise)',
+    'light':       'lightly active (1–3 days/week)',
+    'moderate':    'moderately active (3–5 days/week)',
+    'active':      'very active (6–7 days/week)',
+    'very_active': 'extra active (physical job)',
+}
+
+ACTIVITY_MULTIPLIERS = {
+    'sedentary':  1.2,
+    'light':      1.375,
+    'moderate':   1.55,
+    'active':     1.725,
+    'very_active': 1.9,
+}
+
 
 def get_settings():
     db = get_db()
     return db.execute('SELECT * FROM settings WHERE id = 1').fetchone()
+
+
+@app.context_processor
+def inject_globals():
+    return {'nav_settings': get_settings()}
+
+
+def calc_tdee(settings):
+    """Mifflin-St Jeor BMR × activity multiplier."""
+    w = float(settings['weight_kg'])
+    h = float(settings['height_cm'])
+    a = float(settings['age'])
+    if settings['gender'] == 'female':
+        bmr = 10 * w + 6.25 * h - 5 * a - 161
+    else:
+        bmr = 10 * w + 6.25 * h - 5 * a + 5
+    return bmr * ACTIVITY_MULTIPLIERS.get(settings['activity_level'], 1.2)
 
 
 # ── Page Routes ──────────────────────────────────────────────────────────────
@@ -69,12 +102,25 @@ def calendar_view(year, month):
     else:
         next_year, next_month = year, month + 1
 
+    # Weight prediction based on logged days only
+    tdee = calc_tdee(settings)
+    total_deficit = sum(tdee - v for v in daily_totals.values())
+    predicted_kg = total_deficit / 7700  # positive = loss, negative = gain
+    is_loss = predicted_kg >= 0
+    prediction = {
+        'tdee': round(tdee),
+        'days': len(daily_totals),
+        'kg_str': f"{abs(predicted_kg):.2f}",
+        'is_loss': is_loss,
+    }
+
     return render_template('calendar.html',
         year=year, month=month, month_name=month_name,
         weeks=weeks, daily_totals=daily_totals,
         day_color=day_color, today=today_date,
         prev_year=prev_year, prev_month=prev_month,
-        next_year=next_year, next_month=next_month)
+        next_year=next_year, next_month=next_month,
+        prediction=prediction)
 
 
 @app.route('/day/<date_str>')
@@ -102,27 +148,43 @@ def day_view(date_str):
 def settings_view():
     db = get_db()
     if request.method == 'POST':
-        calorie_target = request.form.get('calorie_target', type=int)
+        calorie_target  = request.form.get('calorie_target',  type=int)
         yellow_threshold = request.form.get('yellow_threshold', type=int)
-        red_threshold = request.form.get('red_threshold', type=int)
+        red_threshold   = request.form.get('red_threshold',   type=int)
+        age             = request.form.get('age',             type=int)
+        height_cm       = request.form.get('height_cm',       type=int)
+        weight_kg       = request.form.get('weight_kg',       type=float)
+        gender          = request.form.get('gender',          '').strip()
+        activity_level  = request.form.get('activity_level',  '').strip()
 
-        if calorie_target and yellow_threshold and red_threshold:
-            if yellow_threshold <= red_threshold:
+        if all([calorie_target, yellow_threshold, red_threshold, age, height_cm, weight_kg, gender, activity_level]):
+            errors = []
+            if yellow_threshold > red_threshold:
+                errors.append('yellow threshold must be ≤ red threshold.')
+            if gender not in {'male', 'female'}:
+                errors.append('invalid gender value.')
+            if activity_level not in ACTIVITY_LABELS:
+                errors.append('invalid activity level.')
+
+            if errors:
+                for e in errors:
+                    flash(e, 'error')
+            else:
                 db.execute(
-                    'UPDATE settings SET calorie_target = ?, yellow_threshold = ?, red_threshold = ? WHERE id = 1',
-                    (calorie_target, yellow_threshold, red_threshold)
+                    'UPDATE settings SET calorie_target=?, yellow_threshold=?, red_threshold=?, '
+                    'age=?, height_cm=?, weight_kg=?, gender=?, activity_level=? WHERE id=1',
+                    (calorie_target, yellow_threshold, red_threshold,
+                     age, height_cm, weight_kg, gender, activity_level)
                 )
                 db.commit()
-                flash('Settings saved.', 'success')
-            else:
-                flash('Yellow threshold must be less than or equal to red threshold.', 'error')
+                flash('settings saved.', 'success')
         else:
-            flash('All fields are required.', 'error')
+            flash('all fields are required.', 'error')
 
         return redirect(url_for('settings_view'))
 
     settings = get_settings()
-    return render_template('settings.html', settings=settings)
+    return render_template('settings.html', settings=settings, activity_labels=ACTIVITY_LABELS)
 
 
 # ── JSON API Routes ──────────────────────────────────────────────────────────
@@ -240,4 +302,4 @@ def get_meals(date_str):
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=False)

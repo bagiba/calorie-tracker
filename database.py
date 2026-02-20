@@ -26,7 +26,12 @@ def init_db():
             id INTEGER PRIMARY KEY CHECK (id = 1),
             calorie_target INTEGER DEFAULT 1600,
             yellow_threshold INTEGER DEFAULT 1600,
-            red_threshold INTEGER DEFAULT 1850
+            red_threshold INTEGER DEFAULT 1850,
+            age INTEGER DEFAULT 24,
+            height_cm INTEGER DEFAULT 170,
+            weight_kg REAL DEFAULT 80.0,
+            gender TEXT DEFAULT 'male',
+            activity_level TEXT DEFAULT 'sedentary'
         );
 
         INSERT OR IGNORE INTO settings (id) VALUES (1);
@@ -41,5 +46,20 @@ def init_db():
 
         CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(date);
     ''')
+
+    # Migrate existing settings table if columns are missing
+    new_cols = [
+        ('age',            'INTEGER DEFAULT 24'),
+        ('height_cm',      'INTEGER DEFAULT 170'),
+        ('weight_kg',      'REAL DEFAULT 80.0'),
+        ('gender',         "TEXT DEFAULT 'male'"),
+        ('activity_level', "TEXT DEFAULT 'sedentary'"),
+    ]
+    for col, definition in new_cols:
+        try:
+            db.execute(f'ALTER TABLE settings ADD COLUMN {col} {definition}')
+        except sqlite3.OperationalError:
+            pass  # column already exists
+
     db.commit()
     db.close()
