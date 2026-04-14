@@ -4,7 +4,7 @@ import secrets
 
 from flask import g
 
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clories.db')
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calories.db')
 
 
 def get_db():
