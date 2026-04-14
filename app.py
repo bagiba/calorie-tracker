@@ -1,10 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from database import get_db, close_db, init_db
+from dotenv import load_dotenv
 import calendar as cal
+import os
 from datetime import date, datetime
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = 'clories-secret-key'
+app.secret_key = os.environ['SECRET_KEY']
 
 app.teardown_appcontext(close_db)
 
