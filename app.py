@@ -35,15 +35,31 @@ def inject_globals():
     return {'nav_settings': get_settings()}
 
 
-def calc_tdee(settings):
-    """Mifflin-St Jeor BMR × activity multiplier."""
+def calc_bmr(settings):
+    """Mifflin-St Jeor BMR."""
     w = float(settings['weight_kg'])
     h = float(settings['height_cm'])
     a = float(settings['age'])
     if settings['gender'] == 'female':
-        bmr = 10 * w + 6.25 * h - 5 * a - 161
-    else:
-        bmr = 10 * w + 6.25 * h - 5 * a + 5
+        return 10 * w + 6.25 * h - 5 * a - 161
+    return 10 * w + 6.25 * h - 5 * a + 5
+
+def calc_tdee(settings, steps=None):
+    """Calculate TDEE.
+    If steps provided: BMR × 1.2 (sedentary base) + walking calories derived
+    from steps using weight and height-based stride length.
+    Falls back to activity level multiplier if no steps.
+    """
+    bmr = calc_bmr(settings)
+    if steps is not None:
+        weight_kg = float(settings['weight_kg'])
+        height_cm = float(settings['height_cm'])
+        # Stride length estimate from height and sex (meters per step)
+        stride_m = height_cm * (0.413 if settings['gender'] == 'female' else 0.415) / 100
+        distance_km = (steps * stride_m) / 1000
+        # ~0.6 kcal per kg per km walked (net above resting, well-validated)
+        walking_calories = 0.6 * weight_kg * distance_km
+        return bmr * 1.2 + walking_calories
     return bmr * ACTIVITY_MULTIPLIERS.get(settings['activity_level'], 1.2)
 
 
@@ -76,6 +92,27 @@ def calendar_view(year, month):
 
     daily_totals = {row['date']: row['total'] for row in rows}
 
+    step_rows = db.execute(
+        'SELECT date, steps FROM steps WHERE date BETWEEN ? AND ?',
+        (first_day, last_day)
+    ).fetchall()
+    daily_steps = {row['date']: row['steps'] for row in step_rows}
+
+    # Load all historical goals ordered by effective date (ascending)
+    goals = db.execute(
+        'SELECT yellow_threshold, red_threshold, effective_date FROM calorie_goals ORDER BY effective_date'
+    ).fetchall()
+
+    def goal_for_date(date_str):
+        """Return the goal active on date_str (latest effective_date <= date_str)."""
+        active = None
+        for g in goals:
+            if g['effective_date'] <= date_str:
+                active = g
+            else:
+                break
+        return active or settings
+
     def day_color(day):
         if day == 0:
             return ''
@@ -83,9 +120,10 @@ def calendar_view(year, month):
         total = daily_totals.get(date_str)
         if total is None:
             return 'gray'
-        if total <= settings['yellow_threshold']:
+        goal = goal_for_date(date_str)
+        if total <= goal['yellow_threshold']:
             return 'green'
-        if total <= settings['red_threshold']:
+        if total <= goal['red_threshold']:
             return 'yellow'
         return 'red'
 
@@ -102,13 +140,15 @@ def calendar_view(year, month):
     else:
         next_year, next_month = year, month + 1
 
-    # Weight prediction based on logged days only
-    tdee = calc_tdee(settings)
-    total_deficit = sum(tdee - v for v in daily_totals.values())
+    # Weight prediction based on logged days only, using per-day TDEE from steps
+    total_deficit = 0
+    for date_str, calories in daily_totals.items():
+        steps = daily_steps.get(date_str)
+        day_tdee = calc_tdee(settings, steps=steps)
+        total_deficit += day_tdee - calories
     predicted_kg = total_deficit / 7700  # positive = loss, negative = gain
     is_loss = predicted_kg >= 0
     prediction = {
-        'tdee': round(tdee),
         'days': len(daily_totals),
         'kg_str': f"{abs(predicted_kg):.2f}",
         'is_loss': is_loss,
@@ -120,7 +160,7 @@ def calendar_view(year, month):
         day_color=day_color, today=today_date,
         prev_year=prev_year, prev_month=prev_month,
         next_year=next_year, next_month=next_month,
-        prediction=prediction)
+        prediction=prediction, daily_steps=daily_steps)
 
 
 @app.route('/day/<date_str>')
@@ -139,9 +179,12 @@ def day_view(date_str):
     total = sum(m['calories'] for m in meals)
     settings = get_settings()
 
+    steps_row = db.execute('SELECT steps FROM steps WHERE date = ?', (date_str,)).fetchone()
+    steps = steps_row['steps'] if steps_row else None
+
     return render_template('day.html',
         date=date_str, parsed_date=parsed,
-        meals=meals, total=total, settings=settings)
+        meals=meals, total=total, settings=settings, steps=steps)
 
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -176,6 +219,13 @@ def settings_view():
                     (calorie_target, yellow_threshold, red_threshold,
                      age, height_cm, weight_kg, gender, activity_level)
                 )
+                today_str = date.today().isoformat()
+                db.execute(
+                    'INSERT INTO calorie_goals (yellow_threshold, red_threshold, effective_date) '
+                    'VALUES (?, ?, ?) ON CONFLICT(effective_date) DO UPDATE SET '
+                    'yellow_threshold=excluded.yellow_threshold, red_threshold=excluded.red_threshold',
+                    (yellow_threshold, red_threshold, today_str)
+                )
                 db.commit()
                 flash('settings saved.', 'success')
         else:
@@ -184,7 +234,8 @@ def settings_view():
         return redirect(url_for('settings_view'))
 
     settings = get_settings()
-    return render_template('settings.html', settings=settings, activity_labels=ACTIVITY_LABELS)
+    bmr_sedentary = round(calc_bmr(settings) * 1.2)
+    return render_template('settings.html', settings=settings, activity_labels=ACTIVITY_LABELS, bmr_sedentary=bmr_sedentary)
 
 
 # ── JSON API Routes ──────────────────────────────────────────────────────────
@@ -298,6 +349,40 @@ def get_meals(date_str):
         } for m in meals],
         'total': total
     })
+
+
+@app.route('/api/steps', methods=['POST'])
+def log_steps():
+    token = request.headers.get('X-API-Key', '')
+    settings = get_settings()
+    if not token or token != settings['api_key']:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    step_date = data.get('date')
+    steps = data.get('steps')
+
+    if not step_date or steps is None:
+        return jsonify({'error': 'date and steps are required'}), 400
+
+    try:
+        steps = int(steps)
+        if steps < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({'error': 'steps must be a non-negative integer'}), 400
+
+    db = get_db()
+    db.execute(
+        'INSERT INTO steps (date, steps) VALUES (?, ?) ON CONFLICT(date) DO UPDATE SET steps=excluded.steps',
+        (step_date, steps)
+    )
+    db.commit()
+
+    return jsonify({'date': step_date, 'steps': steps}), 200
 
 
 if __name__ == '__main__':

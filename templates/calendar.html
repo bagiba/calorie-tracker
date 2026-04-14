@@ -42,11 +42,15 @@
     {% set date_str = '%04d-%02d-%02d'|format(year, month, day) %}
     {% set color = day_color(day) %}
     {% set total = daily_totals.get(date_str) %}
+    {% set steps = daily_steps.get(date_str) %}
     <a href="{{ url_for('day_view', date_str=date_str) }}"
        class="day-cell {{ color }}{% if today.year == year and today.month == month and today.day == day %} today{% endif %}">
         <span class="day-number">{{ day }}</span>
         {% if total is not none %}
         <span class="day-calories">{{ total }} cal</span>
+        {% endif %}
+        {% if steps is not none %}
+        <span class="day-steps">{{ "%.1fk"|format(steps / 1000) }} steps</span>
         {% endif %}
     </a>
     {% endif %}

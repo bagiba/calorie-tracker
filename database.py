@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import secrets
 
 from flask import g
 
@@ -45,7 +46,27 @@ def init_db():
         );
 
         CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(date);
+
+        CREATE TABLE IF NOT EXISTS calorie_goals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            yellow_threshold INTEGER NOT NULL,
+            red_threshold INTEGER NOT NULL,
+            effective_date TEXT NOT NULL UNIQUE
+        );
+
+        CREATE TABLE IF NOT EXISTS steps (
+            date TEXT PRIMARY KEY,
+            steps INTEGER NOT NULL
+        );
     ''')
+
+    # Seed calorie_goals from current settings if empty
+    row = db.execute('SELECT yellow_threshold, red_threshold FROM settings WHERE id = 1').fetchone()
+    if row:
+        db.execute(
+            'INSERT OR IGNORE INTO calorie_goals (yellow_threshold, red_threshold, effective_date) VALUES (?, ?, ?)',
+            (row[0], row[1], '0001-01-01')
+        )
 
     # Migrate existing settings table if columns are missing
     new_cols = [
@@ -60,6 +81,15 @@ def init_db():
             db.execute(f'ALTER TABLE settings ADD COLUMN {col} {definition}')
         except sqlite3.OperationalError:
             pass  # column already exists
+
+    # Add api_key column if missing, then seed a random key if empty
+    try:
+        db.execute("ALTER TABLE settings ADD COLUMN api_key TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+    row = db.execute('SELECT api_key FROM settings WHERE id = 1').fetchone()
+    if row and not row[0]:
+        db.execute('UPDATE settings SET api_key = ? WHERE id = 1', (secrets.token_hex(16),))
 
     db.commit()
     db.close()

@@ -65,6 +65,36 @@
         </select>
     </div>
 
+    <div class="form-group">
+        <label>base sedentary tdee</label>
+        <p class="help-text">your BMR × 1.2 — the minimum daily burn at rest, based on your current stats.</p>
+        <div class="stat-display">{{ bmr_sedentary }} kcal</div>
+    </div>
+
     <button type="submit" class="btn-save">save settings</button>
 </form>
+
+<div class="api-key-section">
+    <h2 class="settings-section">iOS health sync</h2>
+    <p class="help-text section-help">use this API key in your iOS Shortcut to automatically push daily step counts to this app.</p>
+    <div class="api-key-display">
+        <label>API key</label>
+        <div class="api-key-row">
+            <code id="api-key-value">{{ settings['api_key'] }}</code>
+            <button type="button" class="btn-copy" onclick="copyApiKey()">copy</button>
+        </div>
+    </div>
+    <p class="help-text">endpoint: <code>POST /api/steps</code> &nbsp;·&nbsp; header: <code>X-API-Key: &lt;key&gt;</code> &nbsp;·&nbsp; body: <code>{"date": "YYYY-MM-DD", "steps": 8000}</code></p>
+</div>
+
+<script>
+function copyApiKey() {
+    const key = document.getElementById('api-key-value').textContent;
+    navigator.clipboard.writeText(key).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = 'copied!';
+        setTimeout(() => btn.textContent = 'copy', 1500);
+    });
+}
+</script>
 {% endblock %}

@@ -15,6 +15,13 @@
         <span class="target-info">/ {{ settings['calorie_target'] }} cal target</span>
     </div>
 
+    {% if steps is not none %}
+    <div class="steps-bar">
+        <span class="steps-icon">&#x1F463;</span>
+        <span class="steps-count">{{ "{:,}".format(steps) }} steps</span>
+    </div>
+    {% endif %}
+
     <div class="meal-list" id="meal-list">
         {% for meal in meals %}
         <div class="meal-item" data-id="{{ meal['id'] }}">
